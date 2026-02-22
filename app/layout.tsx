@@ -13,8 +13,8 @@ const sourceCodePro = Source_Code_Pro({
 });
 
 export const metadata: Metadata = {
-  title: "TechSavings Europe",
-  description: "Phase 1: Discovery Heatmap",
+  title: "Kept. | Maximize Your Tech Salary",
+  description: "Visualize your tech salary and relocate for financial freedom.",
 };
 
 export default function RootLayout({

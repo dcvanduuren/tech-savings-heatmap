@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false });
 
@@ -23,6 +24,7 @@ const GEOCODE_DEBOUNCE_MS = 300;
 
 export default function Home() {
   const [isMapVisible, setIsMapVisible] = useState(false);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPlace, setSelectedPlace] = useState<MapboxFeature | null>(null);
   const [suggestions, setSuggestions] = useState<MapboxFeature[]>([]);
@@ -94,8 +96,9 @@ export default function Home() {
   return (
     <>
       {/* Compact glass header - 90% see-through, map shows through */}
-      <header className="fixed top-0 left-0 right-0 z-10 flex w-full items-center justify-between border-b border-white/20 bg-white/10 p-3 shadow-sm backdrop-blur-md">
-        <div className="flex-shrink-0">
+      <header className="fixed top-0 left-0 right-0 z-40 flex h-16 w-full items-center justify-between border-b border-white/20 bg-white/10 px-6 shadow-sm backdrop-blur-md">
+        {/* Left: Logo container */}
+        <div className="flex w-24 items-center justify-start">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -110,30 +113,21 @@ export default function Home() {
             <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
           </svg>
         </div>
-        <div className="flex-1 text-center">
-          <h1 className="text-xl font-bold text-slate-900">TechSavings Europe</h1>
-          <p className="text-sm text-slate-500">Phase 1: Discovery Heatmap</p>
+
+        {/* Center: Title / Subtitle container */}
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-tight">Kept.</h1>
         </div>
-        <button
-          type="button"
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-slate-700 hover:bg-white/30 transition-colors"
-          aria-label="Open menu"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-5 w-5"
+
+        {/* Right: About Link container */}
+        <div className="flex w-24 items-center justify-end">
+          <button
+            onClick={() => setIsAboutOpen(true)}
+            className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors pointer-events-auto cursor-pointer"
           >
-            <line x1="4" x2="20" y1="6" y2="6" />
-            <line x1="4" x2="20" y1="12" y2="12" />
-            <line x1="4" x2="20" y1="18" y2="18" />
-          </svg>
-        </button>
+            About
+          </button>
+        </div>
       </header>
 
       {/* Welcome screen - full-screen white, centered */}
@@ -145,7 +139,7 @@ export default function Home() {
         <div className="flex flex-1 flex-col items-center justify-center px-6">
           <div className="flex items-center gap-4 mb-10">
             <h1 className="text-center text-4xl font-bold tracking-tight text-slate-900 md:text-5xl">
-              Find your tech arbitrage
+              Maximize your tech salary
             </h1>
             <div className="group relative">
               <div className="flex h-6 w-6 cursor-help items-center justify-center rounded-full border border-slate-300 text-xs font-bold text-slate-400 transition-colors hover:border-slate-500 hover:text-slate-600">
@@ -200,8 +194,8 @@ export default function Home() {
               type="submit"
               disabled={!selectedPlace}
               className={`font-mono min-h-12 rounded-xl px-6 py-3 font-medium shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 ${selectedPlace
-                  ? 'bg-emerald-600 text-white hover:bg-emerald-500 focus:ring-emerald-500 cursor-pointer'
-                  : 'cursor-not-allowed bg-slate-300 text-slate-500 focus:ring-slate-400'
+                ? 'bg-emerald-600 text-white hover:bg-emerald-500 focus:ring-emerald-500 cursor-pointer'
+                : 'cursor-not-allowed bg-slate-300 text-slate-500 focus:ring-slate-400'
                 }`}
             >
               Locate
@@ -220,6 +214,66 @@ export default function Home() {
             entryCityQuery={!selectedPlace && isMapVisible ? searchQuery : undefined}
             initialCenter={selectedPlace ? { lng: selectedPlace.center[0], lat: selectedPlace.center[1] } : undefined}
           />
+        </div>
+      </div>
+
+      {/* About Overlay - State preserved across interactions */}
+      <div
+        className={`fixed inset-0 z-50 flex flex-col bg-slate-50 overflow-y-auto transition-transform duration-500 ease-in-out selection:bg-emerald-200 selection:text-emerald-900 ${isAboutOpen ? 'translate-y-0' : 'translate-y-full'}`}
+      >
+        <div className="flex-1 flex items-center justify-center p-6 min-h-screen">
+          <div className="w-full max-w-2xl py-24">
+            {/* Back Link - Styled as a subtle text link above the card */}
+            <button
+              onClick={() => setIsAboutOpen(false)}
+              className="group inline-flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-slate-900 transition-colors mb-4 cursor-pointer"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 transition-transform group-hover:-translate-x-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Map
+            </button>
+
+            {/* The Lifted Card UI */}
+            <div className="bg-white border border-slate-200 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-10 md:p-14 space-y-12">
+
+              <div className="space-y-4">
+                <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+                  Expanding Your Possibilities
+                </h1>
+              </div>
+
+              <section className="space-y-4">
+                <h2 className="text-sm font-bold uppercase tracking-widest text-emerald-600">The Mission</h2>
+                <p className="text-lg leading-relaxed text-slate-700">
+                  I built Kept. to inform people about their possibilities in life. Currently, Kept. focuses on the tech industry, helping you visualize your salary and understand what relocating to a new city could mean for your actual financial freedom.
+                </p>
+              </section>
+
+              <section className="space-y-4">
+                <h2 className="text-sm font-bold uppercase tracking-widest text-emerald-600">What's Next</h2>
+                <p className="text-lg leading-relaxed text-slate-700">
+                  I am currently working on integrating real datasets and APIs to pull live data. Soon more.
+                </p>
+              </section>
+
+              {/* Transparent Data Disclaimer as a subtle footer inside the card */}
+              <section className="pt-8 border-t border-slate-100">
+                <h2 className="text-sm font-bold uppercase tracking-widest text-rose-500 mb-4">Data Disclaimer</h2>
+                <p className="text-slate-500 leading-relaxed text-sm">
+                  A note on the numbers: The current estimates for tech salaries, rent, and cost of living are hardcoded baselines provided by Gemini AI. They are designed to give you a directional understanding of different markets. Please use these numbers responsibly as a starting point for your own research, not as guaranteed financial advice.
+                </p>
+              </section>
+
+            </div>
+          </div>
         </div>
       </div>
     </>
