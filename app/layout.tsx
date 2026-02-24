@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Source_Code_Pro } from "next/font/google";
+import { Plus_Jakarta_Sans, Source_Code_Pro } from "next/font/google";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
+const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans-primary",
   subsets: ["latin"],
 });
@@ -25,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${spaceGrotesk.variable} ${sourceCodePro.variable} font-sans antialiased`}
+        className={`${plusJakartaSans.variable} ${sourceCodePro.variable} font-sans antialiased`}
       >
         {children}
       </body>
