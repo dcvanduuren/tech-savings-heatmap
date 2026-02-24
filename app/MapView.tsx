@@ -15,6 +15,7 @@ import { FilterBar } from '../components/ui/FilterBar';
 import { NomadPanel } from '../components/nomad/NomadPanel';
 import { ArbitrageModal } from '../components/nomad/ArbitrageModal';
 import { AuthModule } from '../components/auth/AuthModule';
+import { OnboardingGate } from '../components/auth/OnboardingGate';
 import { CityData } from '../types/city';
 
 const DEFAULT_VIEW = { longitude: 15.0, latitude: 50.0, zoom: 3.5 };
@@ -302,6 +303,7 @@ export default function MapView({ initialCities, entryCityQuery, initialCenter: 
                     <option value="junior">Junior (0-2y)</option>
                     <option value="mid">Mid-Level (3-5y)</option>
                     <option value="senior">Senior (6+y)</option>
+                    <option value="lead">Lead/Staff (8+y)</option>
                   </select>
                 </div>
               </div>
@@ -344,6 +346,14 @@ export default function MapView({ initialCities, entryCityQuery, initialCenter: 
         arbitrageMode={arbitrageMode}
         arbitrationCityId={arbitrationCityId}
         roleKey={roleKey}
+      />
+
+      {/* --- CROWDSOURCING PIPELINE GATE --- */}
+      <OnboardingGate
+        onComplete={(role, level) => {
+          setSelectedRole(role);
+          setSelectedLevel(level);
+        }}
       />
     </div>
   );

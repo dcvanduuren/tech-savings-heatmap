@@ -134,3 +134,97 @@ export function calculateNetSalary(monthlyGross: number, cityName: string): numb
 
     return Math.round(monthlyNet);
 }
+
+export type TaxBreakdownItem = {
+    label: string;
+    amount: number;
+};
+
+export function getTaxBreakdown(monthlyGross: number, cityName: string): TaxBreakdownItem[] {
+    const annualGross = monthlyGross * 12;
+    const normalizedCity = cityName.toLowerCase().trim();
+    const breakdown: TaxBreakdownItem[] = [];
+
+    switch (normalizedCity) {
+        case 'london': {
+            const exchangeRate = 1.17;
+            const annualGrossGBP = annualGross / exchangeRate;
+            let taxGBP = 0;
+            const personalAllowance = 12570;
+
+            if (annualGrossGBP > personalAllowance) {
+                taxGBP += (Math.min(annualGrossGBP, 50270) - personalAllowance) * 0.20;
+            }
+            if (annualGrossGBP > 50270) {
+                taxGBP += (Math.min(annualGrossGBP, 125140) - 50270) * 0.40;
+            }
+            if (annualGrossGBP > 125140) {
+                taxGBP += (annualGrossGBP - 125140) * 0.45;
+            }
+
+            let niGBP = 0;
+            if (annualGrossGBP > personalAllowance) {
+                niGBP = (annualGrossGBP - personalAllowance) * 0.08;
+            }
+
+            if (taxGBP > 0) breakdown.push({ label: 'UK Income Tax', amount: Math.round((taxGBP * exchangeRate) / 12) });
+            if (niGBP > 0) breakdown.push({ label: 'National Insurance', amount: Math.round((niGBP * exchangeRate) / 12) });
+            break;
+        }
+        case 'berlin':
+        case 'munich': {
+            let taxEUR = 0;
+            const allowance = 11604;
+            if (annualGross > allowance) {
+                taxEUR += (Math.min(annualGross, 66760) - allowance) * 0.24;
+            }
+            if (annualGross > 66760) {
+                taxEUR += (Math.min(annualGross, 277825) - 66760) * 0.42;
+            }
+            if (annualGross > 277825) {
+                taxEUR += (annualGross - 277825) * 0.45;
+            }
+
+            const socialSecEUR = annualGross * 0.20;
+
+            if (taxEUR > 0) breakdown.push({ label: 'German Income Tax', amount: Math.round(taxEUR / 12) });
+            if (socialSecEUR > 0) breakdown.push({ label: 'Social Security', amount: Math.round(socialSecEUR / 12) });
+            break;
+        }
+        case 'amsterdam': {
+            const taxableGross = annualGross * 0.70;
+            let taxEUR = 0;
+            const bracket1Limit = 75518;
+
+            if (taxableGross <= bracket1Limit) {
+                taxEUR = taxableGross * 0.3697;
+            } else {
+                taxEUR = (bracket1Limit * 0.3697) + ((taxableGross - bracket1Limit) * 0.4950);
+            }
+
+            breakdown.push({ label: '30% Ruling Benefit', amount: 0 }); // Informational
+            if (taxEUR > 0) breakdown.push({ label: 'Dutch Income Tax', amount: Math.round(taxEUR / 12) });
+            break;
+        }
+        case 'madrid':
+        case 'barcelona': {
+            const taxEUR = annualGross * 0.24;
+            if (taxEUR > 0) breakdown.push({ label: 'Beckham Law Tax (Flat 24%)', amount: Math.round(taxEUR / 12) });
+            break;
+        }
+        case 'warsaw': {
+            const taxEUR = annualGross * 0.12;
+            const socialEUR = 6000;
+            if (taxEUR > 0) breakdown.push({ label: 'B2B Flat Income Tax', amount: Math.round(taxEUR / 12) });
+            if (socialEUR > 0) breakdown.push({ label: 'ZUS & Health Contrib.', amount: Math.round(socialEUR / 12) });
+            break;
+        }
+        default: {
+            const taxEUR = annualGross * 0.35;
+            if (taxEUR > 0) breakdown.push({ label: 'Estimated Euro Tax', amount: Math.round(taxEUR / 12) });
+            break;
+        }
+    }
+
+    return breakdown;
+}

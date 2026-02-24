@@ -164,8 +164,8 @@ export function HomeClient({ initialCities }: { initialCities: CityData[] }) {
             >
                 <div className="flex flex-1 flex-col items-center justify-center px-6">
                     <div className={`flex items-center gap-4 mb-10 transition-all duration-1000 ease-out delay-100 ${isReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                        <h1 className="text-center text-4xl font-bold tracking-tight text-slate-900 md:text-5xl drop-shadow-lg">
-                            Maximize your tech salary
+                        <h1 className="text-center text-4xl font-bold tracking-tight text-slate-900 md:text-5xl drop-shadow-lg max-w-2xl px-4">
+                            Your skills are global. Your choices should be too.
                         </h1>
                         <div className="group relative">
                             <div className="flex h-6 w-6 cursor-help items-center justify-center rounded-none border border-slate-400 text-[10px] font-bold text-slate-500 transition-colors hover:border-slate-800 hover:text-slate-800 pb-px">
@@ -173,7 +173,7 @@ export function HomeClient({ initialCities }: { initialCities: CityData[] }) {
                             </div>
                             <div className="pointer-events-none absolute bottom-full left-1/2 mb-4 w-72 -translate-x-1/2 rounded-none border border-white/60 bg-white/[0.85] p-5 text-xs font-medium leading-relaxed text-slate-700 opacity-0 shadow-2xl backdrop-blur-xl transition-all duration-300 group-hover:opacity-100 group-hover:mb-3 z-50">
                                 <div className="space-y-4">
-                                    <p>Stop overpaying for your baseline. Compare tech salaries, rent, and living costs to discover where your income goes furthest in Europe.</p>
+                                    <p>A crowdsourced ledger for tech workers to visualize geographic arbitrage, understand local taxes, and take control of their life design.</p>
 
                                     {topCity && (
                                         <div className="bg-orange-500/10 border border-orange-500/20 rounded p-4 text-center">
@@ -343,7 +343,7 @@ export function HomeClient({ initialCities }: { initialCities: CityData[] }) {
                             <section className="space-y-3 relative z-10">
                                 <h2 className="text-[10px] font-bold uppercase tracking-widest text-orange-500 drop-shadow-sm">The Mission</h2>
                                 <p className="text-sm leading-relaxed text-slate-700">
-                                    I built <span className="text-slate-900 font-semibold">kept.</span> to inform people about their possibilities in life. Currently, Kept focuses on the tech industry, helping you visualize your salary and understand what relocating to a new city could mean for your actual financial freedom.
+                                    I built <span className="text-slate-900 font-semibold">kept.</span> to empower people to understand their options and gain financial freedom through geographic mobility. Currently, Kept focuses on the tech industry, helping you visualize your salary and understand what relocating to a new city could mean for your life design.
                                 </p>
                             </section>
 

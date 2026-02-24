@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CityData } from '../../types/city';
+import { getTaxBreakdown } from '../../utils/taxEngine';
 
 export type ArbitrageModalProps = {
     selectedCity: CityData | null;
@@ -98,83 +99,109 @@ export function ArbitrageModal({
                         </div>
                     </div>
                 ) : (
-                    // --- SIDEBAR VERTICAL COMPARISON MODE ---
-                    <div className="space-y-8">
-                        {/* Baseline Box */}
-                        <div className="rounded-none bg-white/50 border border-white/60 p-5 shadow-sm">
-                            <h3 className="font-sans text-sm font-bold text-slate-800 mb-4 border-b border-white pb-2 flex items-center justify-between">
-                                Baseline
-                                <span className="text-orange-500 text-xs w-2 h-2 rounded-full bg-orange-500 drop-shadow shadow-orange-500"></span>
-                            </h3>
+                    // --- SIDEBAR GRID COMPARISON MODE ---
+                    <div className="space-y-6">
 
-                            <div className="space-y-3">
-                                <div className="flex justify-between">
-                                    <span className="font-sans text-[10px] uppercase font-bold tracking-widest text-slate-500">Gross</span>
-                                    <span className="font-mono text-xs text-slate-700">€{baselineCity.salaryGross[roleKey].toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="font-sans text-[10px] uppercase font-bold tracking-widest text-slate-500">Net</span>
-                                    <span className="font-mono text-xs font-bold text-slate-800">€{baselineCity.salaryNet[roleKey].toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between pt-2 border-t border-white">
-                                    <span className="font-sans text-[10px] uppercase font-bold tracking-widest text-slate-500">Rent</span>
-                                    <span className="font-mono text-xs text-slate-500">€{baselineCity.rent.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="font-sans text-[10px] uppercase font-bold tracking-widest text-slate-500">Col</span>
-                                    <span className="font-mono text-xs text-slate-500">€{baselineCity.living.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between pt-2 border-t border-white">
-                                    <span className="font-sans text-[10px] uppercase font-bold tracking-widest text-orange-600">Kept</span>
-                                    <span className="font-mono text-sm font-bold text-orange-600">€{baselineCity.savings[roleKey].toLocaleString()}</span>
-                                </div>
+                        {/* Headers */}
+                        <div className="grid grid-cols-2 gap-4 text-center px-2">
+                            <div className="flex justify-center items-center gap-2">
+                                <span className="text-orange-500 text-[10px] w-2 h-2 rounded-full bg-orange-500 shadow-sm shadow-orange-500/50 block"></span>
+                                <span className="font-sans text-[11px] font-bold text-slate-800 uppercase tracking-widest truncate" title="Baseline">{baselineCity.name}</span>
+                            </div>
+                            <div className="flex justify-center items-center gap-2">
+                                <span className="text-slate-500 text-[10px] w-2 h-2 rounded-full bg-indigo-400 shadow-sm shadow-indigo-400/50 block"></span>
+                                <span className="font-sans text-[11px] font-bold text-slate-800 uppercase tracking-widest truncate" title={displayCity.name}>{displayCity.name}</span>
                             </div>
                         </div>
 
-                        {/* Selected Box */}
-                        <div className="rounded-none bg-white/50 border border-white/60 p-5 shadow-sm">
-                            <h3 className="font-sans text-sm font-bold text-slate-800 mb-4 border-b border-white pb-2 flex items-center justify-between">
-                                {displayCity.name}
-                                <span className="text-slate-500 text-xs w-2 h-2 rounded-full bg-indigo-400 drop-shadow shadow-indigo-400"></span>
-                            </h3>
+                        {/* Data Grid Body */}
+                        <div className="bg-white/50 border border-white/60 shadow-sm p-4 text-[11px] rounded-none">
+                            {/* Gross Salary Row */}
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center py-2.5 border-b border-white/40 group">
+                                <span className="font-mono text-center text-slate-700">€{(baselineCity.salaryGross[roleKey] || 0).toLocaleString()}</span>
+                                <span className="font-sans font-bold uppercase tracking-widest text-slate-400 text-[9px] w-14 text-center">Gross</span>
+                                <span className="font-mono text-center text-slate-700">€{(displayCity.salaryGross[roleKey] || 0).toLocaleString()}</span>
+                            </div>
 
-                            <div className="space-y-3">
-                                <div className="flex justify-between">
-                                    <span className="font-sans text-[10px] uppercase font-bold tracking-widest text-slate-500">Gross</span>
-                                    <span className="font-mono text-xs text-slate-700">€{displayCity.salaryGross[roleKey].toLocaleString()}</span>
+                            {/* Tax Row with Tooltip */}
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center py-2.5 border-b border-white/40 relative">
+
+                                <div className="text-center group/tooltip relative cursor-help">
+                                    <span className="font-mono text-slate-500 border-b border-dashed border-slate-300 pointer-events-auto">€{((baselineCity.salaryGross[roleKey] || 0) - (baselineCity.salaryNet[roleKey] || 0)).toLocaleString()}</span>
+                                    <div className="pointer-events-none absolute left-0 bottom-full mb-3 w-48 rounded-none border border-white bg-white/90 p-4 text-left opacity-0 shadow-2xl backdrop-blur-[12px] transition-all duration-200 group-hover/tooltip:opacity-100 group-hover/tooltip:translate-y-0 translate-y-1 z-50">
+                                        <p className="font-sans text-[9px] uppercase font-bold text-slate-500 mb-2 border-b border-slate-200 pb-1.5 flex items-center justify-between">Tax Breakdown <span>🏛️</span></p>
+                                        {getTaxBreakdown(baselineCity.salaryGross[roleKey] || 0, baselineCity.name).map((t, idx) => (
+                                            <div key={idx} className="flex justify-between items-center mb-1.5 text-slate-700 font-mono text-[10px]">
+                                                <span className="font-sans text-[10px] font-medium">{t.label}</span>
+                                                <span className="font-bold text-slate-800">€{t.amount.toLocaleString()}</span>
+                                            </div>
+                                        ))}
+                                        <p className="font-sans text-[8px] text-orange-600 mt-2.5 pt-1.5 border-t border-slate-200 font-medium">Spot an error? Update it via the crowdsource button.</p>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span className="font-sans text-[10px] uppercase font-bold tracking-widest text-slate-500">Net</span>
-                                    <span className="font-mono text-xs font-bold text-slate-800">€{displayCity.salaryNet[roleKey].toLocaleString()}</span>
+
+                                <span className="font-sans font-bold uppercase tracking-widest text-slate-400 text-[9px] w-14 text-center flex items-center justify-center gap-[2px]">
+                                    Taxes <span className="w-3 h-3 rounded-full flex items-center justify-center text-[7px] italic font-semibold border-none text-slate-400 opacity-60">i</span>
+                                </span>
+
+                                <div className="text-center group/tooltip relative cursor-help">
+                                    <span className="font-mono text-slate-500 border-b border-dashed border-slate-300 pointer-events-auto">€{((displayCity.salaryGross[roleKey] || 0) - (displayCity.salaryNet[roleKey] || 0)).toLocaleString()}</span>
+                                    <div className="pointer-events-none absolute right-0 bottom-full mb-3 w-48 rounded-none border border-white bg-white/90 p-4 text-left opacity-0 shadow-2xl backdrop-blur-[12px] transition-all duration-200 group-hover/tooltip:opacity-100 group-hover/tooltip:translate-y-0 translate-y-1 z-50">
+                                        <p className="font-sans text-[9px] uppercase font-bold text-slate-500 mb-2 border-b border-slate-200 pb-1.5 flex items-center justify-between">Tax Breakdown <span>🏛️</span></p>
+                                        {getTaxBreakdown(displayCity.salaryGross[roleKey] || 0, displayCity.name).map((t, idx) => (
+                                            <div key={idx} className="flex justify-between items-center mb-1.5 text-slate-700 font-mono text-[10px]">
+                                                <span className="font-sans text-[10px] font-medium">{t.label}</span>
+                                                <span className="font-bold text-slate-800">€{t.amount.toLocaleString()}</span>
+                                            </div>
+                                        ))}
+                                        <p className="font-sans text-[8px] text-orange-600 mt-2.5 pt-1.5 border-t border-slate-200 font-medium">Spot an error? Update it via the crowdsource button.</p>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between pt-2 border-t border-white">
-                                    <span className="font-sans text-[10px] uppercase font-bold tracking-widest text-slate-500">Rent</span>
-                                    <span className={`font-mono text-xs ${displayCity.rent < baselineCity.rent ? "text-orange-500 font-bold" : "text-slate-500"}`}>
-                                        €{displayCity.rent.toLocaleString()}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="font-sans text-[10px] uppercase font-bold tracking-widest text-slate-500">Col</span>
-                                    <span className={`font-mono text-xs ${displayCity.living < baselineCity.living ? "text-orange-500 font-bold" : "text-slate-500"}`}>
-                                        €{displayCity.living.toLocaleString()}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between pt-2 border-t border-white">
-                                    <span className="font-sans text-[10px] uppercase font-bold tracking-widest text-orange-600">Kept</span>
-                                    <span className={`font-mono text-sm font-bold ${displayCity.savings[roleKey] > baselineCity.savings[roleKey] ? "text-orange-500" : "text-slate-600"}`}>
-                                        €{displayCity.savings[roleKey].toLocaleString()}
-                                    </span>
-                                </div>
+                            </div>
+
+                            {/* Net Salary Row */}
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center py-2.5 border-b border-slate-300/60 bg-slate-50/50 mt-1">
+                                <span className="font-mono text-center font-bold text-slate-900">€{(baselineCity.salaryNet[roleKey] || 0).toLocaleString()}</span>
+                                <span className="font-sans font-bold uppercase tracking-widest text-slate-500 text-[9px] w-14 text-center">Net</span>
+                                <span className="font-mono text-center font-bold text-slate-900">€{(displayCity.salaryNet[roleKey] || 0).toLocaleString()}</span>
+                            </div>
+
+                            {/* Rent Row */}
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center py-2.5 border-b border-white/40 mt-1">
+                                <span className="font-mono text-center text-slate-500">-€{(baselineCity.rent || 0).toLocaleString()}</span>
+                                <span className="font-sans font-bold uppercase tracking-widest text-slate-400 text-[9px] w-14 text-center">Rent</span>
+                                <span className={`font-mono text-center ${(displayCity.rent || 0) < (baselineCity.rent || 0) ? "text-orange-500 font-bold" : "text-slate-500"}`}>
+                                    -€{(displayCity.rent || 0).toLocaleString()}
+                                </span>
+                            </div>
+
+                            {/* COL Row */}
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center py-2.5 border-b border-white/40">
+                                <span className="font-mono text-center text-slate-500">-€{(baselineCity.living || 0).toLocaleString()}</span>
+                                <span className="font-sans font-bold uppercase tracking-widest text-slate-400 text-[9px] w-14 text-center">CoL</span>
+                                <span className={`font-mono text-center ${(displayCity.living || 0) < (baselineCity.living || 0) ? "text-orange-500 font-bold" : "text-slate-500"}`}>
+                                    -€{(displayCity.living || 0).toLocaleString()}
+                                </span>
+                            </div>
+
+                            {/* Kept Row */}
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center py-3.5 bg-white/20">
+                                <span className="font-mono text-center font-bold text-orange-600 text-[13px]">€{(baselineCity.savings[roleKey] || 0).toLocaleString()}</span>
+                                <span className="font-sans font-bold uppercase tracking-widest text-orange-500 text-[9px] w-14 text-center drop-shadow-sm">Kept</span>
+                                <span className={`font-mono text-center font-bold text-[13px] ${(displayCity.savings[roleKey] || 0) > (baselineCity.savings[roleKey] || 0) ? "text-orange-500" : "text-slate-600"}`}>
+                                    €{(displayCity.savings[roleKey] || 0).toLocaleString()}
+                                </span>
                             </div>
                         </div>
 
                         {/* Bottom Total Summary */}
-                        <div className="bg-white/70 border border-white p-5 text-center shadow-md">
-                            <p className="font-sans text-[10px] font-bold uppercase tracking-widest text-slate-500">Swap Delta</p>
-                            <p className={`font-mono text-2xl font-bold mt-2 ${displayCity.savings[roleKey] > baselineCity.savings[roleKey] ? "text-orange-500" : "text-slate-500"}`}>
-                                {displayCity.savings[roleKey] > baselineCity.savings[roleKey] ? '+' : ''}
-                                {displayCity.savings[roleKey] < baselineCity.savings[roleKey] ? '-' : ''}
-                                €{Math.abs(displayCity.savings[roleKey] - baselineCity.savings[roleKey]).toLocaleString()}
+                        <div className="bg-white/70 border border-white p-4 py-5 shadow-sm flex items-center justify-between px-6 rounded-none relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 blur-2xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                            <p className="font-sans text-[10px] font-bold uppercase tracking-widest text-slate-600 z-10">Swap Delta</p>
+                            <p className={`font-mono text-2xl font-bold tracking-tight z-10 ${((displayCity.savings[roleKey] || 0) - (baselineCity.savings[roleKey] || 0)) > 0 ? "text-orange-500" : "text-slate-500"}`}>
+                                {((displayCity.savings[roleKey] || 0) - (baselineCity.savings[roleKey] || 0)) > 0 ? '+' : ''}
+                                {((displayCity.savings[roleKey] || 0) - (baselineCity.savings[roleKey] || 0)) < 0 ? '-' : ''}
+                                €{Math.abs((displayCity.savings[roleKey] || 0) - (baselineCity.savings[roleKey] || 0)).toLocaleString()}
                             </p>
                         </div>
                     </div>
