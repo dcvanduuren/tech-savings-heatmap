@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { CityData } from '../../types/city';
 import { useAuth } from '../../hooks/useAuth';
+import { AboutOverlay } from './AboutOverlay';
+import { DataMethodologyOverlay } from './DataMethodologyOverlay';
 
 const MapView = dynamic(() => import('../../app/MapView'), { ssr: false });
 
@@ -26,6 +28,7 @@ const GEOCODE_DEBOUNCE_MS = 300;
 export function HomeClient({ initialCities }: { initialCities: CityData[] }) {
     const [isMapVisible, setIsMapVisible] = useState(false);
     const [isAboutOpen, setIsAboutOpen] = useState(false);
+    const [isMethodologyOpen, setIsMethodologyOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedPlace, setSelectedPlace] = useState<MapboxFeature | null>(null);
     const [suggestions, setSuggestions] = useState<MapboxFeature[]>([]);
@@ -149,6 +152,12 @@ export function HomeClient({ initialCities }: { initialCities: CityData[] }) {
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter') e.preventDefault();
     }, []);
+
+    const handleOpenAbout = useCallback(() => setIsAboutOpen(true), []);
+
+    const memoizedInitialCenter = useMemo(() => {
+        return isMapVisible && selectedPlace ? { lng: selectedPlace.center[0], lat: selectedPlace.center[1] } : undefined;
+    }, [isMapVisible, selectedPlace]);
 
     return (
         <>
@@ -298,74 +307,27 @@ export function HomeClient({ initialCities }: { initialCities: CityData[] }) {
                     <MapView
                         initialCities={initialCities}
                         entryCityQuery={!selectedPlace && isMapVisible ? searchQuery : undefined}
-                        initialCenter={isMapVisible && selectedPlace ? { lng: selectedPlace.center[0], lat: selectedPlace.center[1] } : undefined}
-                        onOpenAbout={() => setIsAboutOpen(true)}
+                        initialCenter={memoizedInitialCenter}
+                        onOpenAbout={handleOpenAbout}
                     />
                 </div>
             </div>
 
             {/* About Overlay - State preserved across interactions */}
-            <div
-                className={`fixed inset-0 z-50 flex flex-col bg-white/40 backdrop-blur-2xl overflow-y-auto transition-all duration-500 ease-in-out selection:bg-orange-500/30 selection:text-slate-900 ${isAboutOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}
-            >
-                <div className="flex-1 flex items-center justify-center p-6 min-h-screen">
-                    <div className="w-full max-w-lg py-8">
-                        {/* Back Link - Styled as a subtle text link above the card */}
-                        <button
-                            onClick={() => setIsAboutOpen(false)}
-                            className="group inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors mb-4 cursor-pointer"
-                        >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4 transition-transform group-hover:-translate-x-1"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                            >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                            </svg>
-                            BACK TO MAP
-                        </button>
+            <AboutOverlay
+                isOpen={isAboutOpen}
+                onClose={() => setIsAboutOpen(false)}
+                onOpenMethodology={() => {
+                    setIsAboutOpen(false);
+                    setIsMethodologyOpen(true);
+                }}
+            />
 
-                        {/* The Lifted Acrylic Card UI */}
-                        <div className="bg-white/[0.25] backdrop-blur-[12px] border text-slate-900 border-white/60 shadow-[0_32px_64px_rgba(0,0,0,0.15)] rounded-none p-6 md:p-8 space-y-8 relative overflow-hidden">
-
-                            {/* Sleek Touch of Orange Glow */}
-                            <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-orange-500/15 blur-[64px] rounded-full pointer-events-none mix-blend-multiply" />
-
-                            <div className="space-y-3 relative z-10">
-                                <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 drop-shadow-sm">
-                                    Expanding Your Possibilities
-                                </h1>
-                            </div>
-
-                            <section className="space-y-3 relative z-10">
-                                <h2 className="text-[10px] font-bold uppercase tracking-widest text-orange-500 drop-shadow-sm">The Mission</h2>
-                                <p className="text-sm leading-relaxed text-slate-700">
-                                    I built <span className="text-slate-900 font-semibold">kept.</span> to empower people to understand their options and gain financial freedom through geographic mobility. Currently, Kept focuses on the tech industry, helping you visualize your salary and understand what relocating to a new city could mean for your life design.
-                                </p>
-                            </section>
-
-                            <section className="space-y-3 relative z-10">
-                                <h2 className="text-[10px] font-bold uppercase tracking-widest text-orange-500 drop-shadow-sm">What's Next</h2>
-                                <p className="text-sm leading-relaxed text-slate-700">
-                                    I am currently working on integrating real datasets and APIs to pull live data. Soon more.
-                                </p>
-                            </section>
-
-                            {/* Transparent Data Disclaimer as a subtle footer inside the card */}
-                            <section className="pt-8 border-t border-slate-300/50 relative z-10">
-                                <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-4">Data Disclaimer</h2>
-                                <p className="text-slate-500 leading-relaxed text-sm">
-                                    A note on the numbers: The current estimates for tech salaries, rent, and cost of living are hardcoded baselines provided by Gemini AI. They are designed to give you a directional understanding of different markets. Please use these numbers responsibly as a starting point for your own research, not as guaranteed financial advice.
-                                </p>
-                            </section>
-
-                        </div>
-                    </div>
-                </div>
-            </div>
+            {/* Methodology Overlay */}
+            <DataMethodologyOverlay
+                isOpen={isMethodologyOpen}
+                onClose={() => setIsMethodologyOpen(false)}
+            />
         </>
     );
 }

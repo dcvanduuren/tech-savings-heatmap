@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { Marker } from '@vis.gl/react-mapbox';
 import { CityData } from '../../types/city';
 import { getDynamicColors } from '../../utils/colorScales';
@@ -57,6 +57,16 @@ export const CityMarker = memo(function CityMarker({
         glowMultiplier: isAnchor ? 1 : (baseColors.glowMultiplier ?? 1)
     };
 
+    const [showSkeleton, setShowSkeleton] = useState(false);
+
+    useEffect(() => {
+        if (isHovered) {
+            setShowSkeleton(true);
+            const t = setTimeout(() => setShowSkeleton(false), 250);
+            return () => clearTimeout(t);
+        }
+    }, [isHovered]);
+
     return (
         <Marker longitude={city.lng} latitude={city.lat} anchor="center">
             <div
@@ -98,15 +108,19 @@ export const CityMarker = memo(function CityMarker({
                         )}
                     </div>
 
-                    <div className={`absolute bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-3 py-1.5 rounded-lg shadow-xl transition-opacity whitespace-nowrap text-sm z-50 pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+                    <div className={`absolute bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-3 py-1.5 rounded-lg shadow-xl transition-opacity whitespace-nowrap text-sm z-10 pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
                         <span className="font-sans font-medium">{city.name}: </span>
-                        <span className={`font-mono font-bold ${diffColorClass}`}>
-                            {isNomadMode && arbitrationCityId ? (
-                                city.isArbitrageBase ? "Anchor City" : `Total Monthly Kept: €${savingsVal.toLocaleString()}`
-                            ) : (
-                                isBaseline ? "Baseline" : difference === 0 ? "€0" : `${difference > 0 ? '+' : '-'}€${Math.abs(difference).toLocaleString()}`
-                            )}
-                        </span>
+                        {showSkeleton ? (
+                            <span className="inline-block w-8 h-4 ml-1 bg-slate-700 animate-pulse rounded align-middle"></span>
+                        ) : (
+                            <span className={`font-mono font-bold ${diffColorClass}`}>
+                                {isNomadMode && arbitrationCityId ? (
+                                    city.isArbitrageBase ? "Anchor City" : `Total Monthly Kept: €${savingsVal.toLocaleString()}`
+                                ) : (
+                                    isBaseline ? "Baseline" : difference === 0 ? "€0" : `${difference > 0 ? '+' : '-'}€${Math.abs(difference).toLocaleString()}`
+                                )}
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>

@@ -26,7 +26,17 @@ async function seedDatabase() {
         let totalGross = 0;
         let count = 0;
 
-        // For every key in our 15x combination matrix, let's run the Progressive Tax Engine
+        // Generate strict Lead variants mathematically dynamically
+        const grossKeys = Object.keys(city.salaries_gross);
+        for (const key of grossKeys) {
+            if (key.endsWith('_senior')) {
+                const leadKey = key.replace('_senior', '_lead');
+                const leadGross = Math.round((city.salaries_gross as any)[key] * 1.35);
+                (city.salaries_gross as any)[leadKey] = leadGross;
+            }
+        }
+
+        // For every key in our 20x combination matrix, let's run the Progressive Tax Engine
         for (const [roleVariant, grossIncome] of Object.entries(city.salaries_gross)) {
             const netIncome = calculateNetSalary(grossIncome, city.name);
 

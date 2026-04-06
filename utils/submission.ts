@@ -8,6 +8,19 @@ export type UserSubmissionData = {
     rent: number;
 };
 
+export async function fetchUserSubmission(userId: string) {
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('user_submissions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    return { data, error };
+}
+
 export async function submitUserData(data: UserSubmissionData) {
     const supabase = createClient();
 
@@ -19,8 +32,14 @@ export async function submitUserData(data: UserSubmissionData) {
         return { error: new Error('You must be logged in to submit data.') };
     }
 
-    // Insert the row into user_submissions.
-    // Row Level Security (RLS) in Supabase will enforce that `user_id` MUST match the active session.
+    // Phase 1 Security: Strict Boundary Limits to prevent extreme outlier injection via API
+    if (data.gross_salary < 0 || data.gross_salary > 2000000) return { error: new Error('Gross salary boundary violation.') };
+    if (data.rent < 0 || data.rent > 100000) return { error: new Error('Rent boundary violation.') };
+
+    // To prevent database bloat and bypass the missing Unique Constraint on user_id, 
+    // we explicitly wipe any old submissions from this user before inserting the new reality.
+    await supabase.from('user_submissions').delete().eq('user_id', session.user.id);
+
     const { data: insertedData, error } = await supabase.from('user_submissions').insert([
         {
             user_id: session.user.id,

@@ -5,9 +5,10 @@ import { submitUserData } from '../../utils/submission';
 
 type OnboardingGateProps = {
     onComplete: (role: string, level: string) => void;
+    forceOpen?: boolean;
 };
 
-export function OnboardingGate({ onComplete }: OnboardingGateProps) {
+export function OnboardingGate({ onComplete, forceOpen }: OnboardingGateProps) {
     const { user, isLoading: isAuthLoading } = useAuth();
     const [isOnboardingChecked, setIsOnboardingChecked] = useState(false);
     const [needsOnboarding, setNeedsOnboarding] = useState(false);
@@ -53,7 +54,7 @@ export function OnboardingGate({ onComplete }: OnboardingGateProps) {
         checkStatus();
     }, [user, isAuthLoading]);
 
-    if (!isOnboardingChecked || !needsOnboarding) {
+    if (!forceOpen && (!isOnboardingChecked || !needsOnboarding)) {
         return null;
     }
 
@@ -82,10 +83,10 @@ export function OnboardingGate({ onComplete }: OnboardingGateProps) {
                 if (!city.trim()) throw new Error("Please enter your current city.");
 
                 const gross_salary = parseFloat(salaryStr.replace(/,/g, '').replace(/\s/g, ''));
-                if (isNaN(gross_salary) || gross_salary <= 0) throw new Error("Please enter a valid gross salary.");
+                if (isNaN(gross_salary) || gross_salary <= 0 || gross_salary > 2000000) throw new Error("Please enter a valid gross salary (Max 2M).");
 
                 const rent = parseFloat(rentStr.replace(/,/g, '').replace(/\s/g, ''));
-                if (isNaN(rent) || rent < 0) throw new Error("Please enter a valid monthly rent.");
+                if (isNaN(rent) || rent < 0 || rent > 100000) throw new Error("Please enter a valid monthly rent (Max 100k).");
 
                 const { error } = await submitUserData({
                     city_name: city.trim(),
@@ -187,12 +188,12 @@ export function OnboardingGate({ onComplete }: OnboardingGateProps) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Monthly Rent (€)</label>
+                                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">1BR Rent in your Area (€)</label>
                                 <input
                                     type="text"
                                     value={rentStr}
                                     onChange={(e) => setRentStr(e.target.value)}
-                                    placeholder="1,200"
+                                    placeholder="e.g. 1,200"
                                     className="w-full bg-white/50 border border-white/60 rounded-none px-4 py-3 text-sm font-medium text-slate-900 focus:outline-none focus:bg-white/70 focus:border-orange-400 transition-all placeholder:text-slate-400 shadow-sm"
                                 />
                             </div>

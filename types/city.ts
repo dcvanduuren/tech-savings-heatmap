@@ -9,4 +9,5 @@ export type CityData = {
     savings: Record<string, number>; // calculated as: salaryNet[role] - rent - living
     sunshine: number; // annual sunshine hours
     isArbitrageBase?: boolean;
+    communityCounts?: Record<string, number>;
 };

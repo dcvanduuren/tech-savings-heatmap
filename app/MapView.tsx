@@ -2,7 +2,7 @@
 
 import Map, { useMap } from '@vis.gl/react-mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, memo } from 'react';
 import { SearchBox } from '@mapbox/search-js-react';
 
 import { getDistance } from '../utils/geometry';
@@ -16,6 +16,7 @@ import { NomadPanel } from '../components/nomad/NomadPanel';
 import { ArbitrageModal } from '../components/nomad/ArbitrageModal';
 import { AuthModule } from '../components/auth/AuthModule';
 import { OnboardingGate } from '../components/auth/OnboardingGate';
+import { Accordion } from '../components/ui/Accordion';
 import { CityData } from '../types/city';
 
 const DEFAULT_VIEW = { longitude: 15.0, latitude: 50.0, zoom: 3.5 };
@@ -25,6 +26,11 @@ type MapViewProps = {
   entryCityQuery?: string;
   initialCenter?: { lng: number; lat: number };
   onOpenAbout?: () => void;
+};
+
+type MapInteractionEvent = {
+  lngLat: { lat: number; lng: number };
+  originalEvent?: MouseEvent;
 };
 
 function MapController({ targetCenter }: { targetCenter?: { lng: number; lat: number } }) {
@@ -39,7 +45,7 @@ function MapController({ targetCenter }: { targetCenter?: { lng: number; lat: nu
   return null;
 }
 
-export default function MapView({ initialCities, entryCityQuery, initialCenter: entryCenter, onOpenAbout }: MapViewProps) {
+const MapView = memo(function MapView({ initialCities, entryCityQuery, initialCenter: entryCenter, onOpenAbout }: MapViewProps) {
   const mapToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
   const [activeCenter, setActiveCenter] = useState(entryCenter);
   const [zoom, setZoom] = useState(DEFAULT_VIEW.zoom);
@@ -55,6 +61,8 @@ export default function MapView({ initialCities, entryCityQuery, initialCenter: 
   // --- GLOBAL ROLE STATE ---
   const [selectedRole, setSelectedRole] = useState('average');
   const [selectedLevel, setSelectedLevel] = useState('average');
+  const [isManualOnboardingOpen, setIsManualOnboardingOpen] = useState(false);
+  const [gatedCityClick, setGatedCityClick] = useState<CityData | null>(null);
   const roleKey = `${selectedRole}_${selectedLevel}`;
 
   // Enforce guest state lock
@@ -112,7 +120,7 @@ export default function MapView({ initialCities, entryCityQuery, initialCenter: 
   const glowScale = zoom >= 5 ? 1 : zoom <= 2 ? 5 : 1 + ((5 - zoom) / 3) * 4;
   const isInteractive = dataPointOpacity > 0.1;
 
-  const handleMapMouseMove = useCallback((evt: any) => {
+  const handleMapMouseMove = useCallback((evt: MapInteractionEvent) => {
     if (!isInteractive || visibleCities.length === 0) {
       if (hoveredCity) setHoveredCity(null);
       return;
@@ -136,13 +144,18 @@ export default function MapView({ initialCities, entryCityQuery, initialCenter: 
     }
   }, [isInteractive, visibleCities, zoom, hoveredCity]);
 
-  const handleMapClick = useCallback((evt: any) => {
+  const handleMapClick = useCallback((evt: MapInteractionEvent) => {
     if (hoveredCity && isInteractive) {
-      setSelectedCity(hoveredCity);
+      if (isAuthLocked && !hoveredCity.isArbitrageBase) {
+        setGatedCityClick(hoveredCity);
+      } else {
+        setSelectedCity(hoveredCity);
+      }
     } else {
       setSelectedCity(null);
+      setGatedCityClick(null);
     }
-  }, [hoveredCity, isInteractive]);
+  }, [hoveredCity, isInteractive, isAuthLocked]);
 
   return (
     <div className={`h-full w-full min-h-[400px] relative transition-opacity duration-[2000ms] ease-in-out ${isMapLoaded ? 'opacity-100' : 'opacity-0'}`}>
@@ -254,80 +267,85 @@ export default function MapView({ initialCities, entryCityQuery, initialCenter: 
         </div>
 
         {/* --- AUTH GATE MODULE --- */}
-        <AuthModule />
+        <AuthModule onResubmitClick={() => setIsManualOnboardingOpen(true)} />
 
         {/* --- ADVANCED FEATURES (GATED) --- */}
-        <div className={`relative space-y-8 transition-all duration-500 ${isAuthLocked ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
-
-          {/* Lock Overlay */}
-          {isAuthLocked && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
-              <div className="bg-white/80 p-4 rounded-xl shadow-2xl backdrop-blur-xl border border-white/50">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-slate-800 drop-shadow-md">
-                  <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clipRule="evenodd" />
-                </svg>
-              </div>
+        <div className={`relative space-y-8 transition-all duration-500`}>
+          {isAuthLocked ? (
+            <div className="flex flex-col items-center justify-center py-12 px-4 bg-white/10 backdrop-blur-md border border-white/40 shadow-inner rounded-none text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-slate-400 mb-3 drop-shadow-sm">
+                <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clipRule="evenodd" />
+              </svg>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 max-w-[200px] leading-relaxed">
+                Create a free account to unlock Role Profiles, Advanced Filters, and Nomad Projections.
+              </p>
             </div>
+          ) : (
+            <>
+              {/* --- ROLE PROFILE --- */}
+              <div className="flex-shrink-0 space-y-4">
+                <div className="pt-2 border-t border-white/20">
+                  <h3 className="font-sans font-bold text-slate-800 text-sm mb-3">Role Profile</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Role</label>
+                      <select
+                        value={selectedRole}
+                        onChange={(e) => setSelectedRole(e.target.value)}
+                        className="w-full bg-white/40 border border-white/50 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:bg-white/60 focus:border-orange-400 transition-all cursor-pointer appearance-none"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
+                      >
+                        <option value="average">Average Tech Role</option>
+                        <option value="software_engineer">Software Engineer</option>
+                        <option value="data_professional">Data Professional</option>
+                        <option value="product_manager">Product Manager</option>
+                        <option value="designer">Designer</option>
+                        <option value="devops">DevOps</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Experience</label>
+                      <select
+                        value={selectedLevel}
+                        onChange={(e) => setSelectedLevel(e.target.value)}
+                        className="w-full bg-white/40 border border-white/50 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:bg-white/60 focus:border-orange-400 transition-all cursor-pointer appearance-none"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
+                      >
+                        <option value="average">Average Experience</option>
+                        <option value="junior">Junior (0-2y)</option>
+                        <option value="mid">Mid-Level (3-5y)</option>
+                        <option value="senior">Senior (6+y)</option>
+                        <option value="lead">Lead/Staff (8+y)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* --- NOMAD PANEL --- */}
+              <Accordion title="Nomad Projections">
+                <NomadPanel
+                  isNomadMode={isNomadMode}
+                  setIsNomadMode={setIsNomadMode}
+                  arbitrageMode={arbitrageMode}
+                  setArbitrageMode={setArbitrageMode}
+                  arbitrationCityId={arbitrationCityId}
+                  setArbitrationCityId={setArbitrationCityId}
+                />
+              </Accordion>
+
+              {/* --- ADVANCED FILTERS --- */}
+              <Accordion title="Advanced Filters">
+                <FilterBar
+                  filters={filters}
+                  updateFilter={updateFilter}
+                  clearFilters={clearFilters}
+                  isNomadMode={isNomadMode}
+                  arbitrageMode={arbitrageMode}
+                />
+              </Accordion>
+            </>
           )}
-
-          {/* --- ROLE PROFILE --- */}
-          <div className="flex-shrink-0 space-y-4">
-            <div className="pt-2 border-t border-white/20">
-              <h3 className="font-sans font-bold text-slate-800 text-sm mb-3">Role Profile</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Role</label>
-                  <select
-                    value={selectedRole}
-                    onChange={(e) => setSelectedRole(e.target.value)}
-                    className="w-full bg-white/40 border border-white/50 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:bg-white/60 focus:border-orange-400 transition-all cursor-pointer appearance-none"
-                    style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
-                  >
-                    <option value="average">Average Tech Role</option>
-                    <option value="software_engineer">Software Engineer</option>
-                    <option value="data_professional">Data Professional</option>
-                    <option value="product_manager">Product Manager</option>
-                    <option value="designer">Designer</option>
-                    <option value="devops">DevOps</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Experience</label>
-                  <select
-                    value={selectedLevel}
-                    onChange={(e) => setSelectedLevel(e.target.value)}
-                    className="w-full bg-white/40 border border-white/50 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:bg-white/60 focus:border-orange-400 transition-all cursor-pointer appearance-none"
-                    style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem' }}
-                  >
-                    <option value="average">Average Experience</option>
-                    <option value="junior">Junior (0-2y)</option>
-                    <option value="mid">Mid-Level (3-5y)</option>
-                    <option value="senior">Senior (6+y)</option>
-                    <option value="lead">Lead/Staff (8+y)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* --- NOMAD PANEL --- */}
-          <NomadPanel
-            isNomadMode={isNomadMode}
-            setIsNomadMode={setIsNomadMode}
-            arbitrageMode={arbitrageMode}
-            setArbitrageMode={setArbitrageMode}
-            arbitrationCityId={arbitrationCityId}
-            setArbitrationCityId={setArbitrationCityId}
-          />
-
-          {/* --- ADVANCED FILTERS --- */}
-          <FilterBar
-            filters={filters}
-            updateFilter={updateFilter}
-            clearFilters={clearFilters}
-            isNomadMode={isNomadMode}
-            arbitrageMode={arbitrageMode}
-          />
         </div>
 
         {/* --- BOTTOM ACTIONS --- */}
@@ -350,11 +368,46 @@ export default function MapView({ initialCities, entryCityQuery, initialCenter: 
 
       {/* --- CROWDSOURCING PIPELINE GATE --- */}
       <OnboardingGate
+        forceOpen={isManualOnboardingOpen}
         onComplete={(role, level) => {
           setSelectedRole(role);
           setSelectedLevel(level);
+          setIsManualOnboardingOpen(false);
         }}
       />
+
+      {/* --- INTERACTIVE PLG CTA MODAL --- */}
+      {gatedCityClick && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] transition-opacity">
+          <div className="bg-white border border-slate-200 shadow-2xl p-6 md:p-8 max-w-sm w-full mx-4 relative overflow-hidden shadow-[0_32px_64px_rgba(0,0,0,0.15)]">
+            {/* Sleek Touch of Orange Glow */}
+            <div className="absolute top-[-50%] right-[-20%] w-32 h-32 bg-orange-500/15 blur-[32px] rounded-full pointer-events-none mix-blend-multiply" />
+
+            <button onClick={() => setGatedCityClick(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-800 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <h3 className="text-xl font-extrabold text-slate-900 mb-2 font-sans drop-shadow-sm leading-tight">Unlock {gatedCityClick.name}</h3>
+            <p className="text-sm font-medium text-slate-600 mb-6 leading-relaxed">
+              Create a free account to view {gatedCityClick.name}'s true savings potential, local rent estimates, and tax structures.
+            </p>
+
+            <button
+              onClick={() => {
+                setGatedCityClick(null);
+                setIsMenuOpen(true);
+              }}
+              className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-black text-white px-4 py-3 text-xs font-bold uppercase tracking-wide transition-all focus:outline-none shadow-md hover:shadow-lg"
+            >
+              Create Free Account
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+});
+
+export default MapView;

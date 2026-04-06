@@ -103,14 +103,44 @@ export function ArbitrageModal({
                     <div className="space-y-6">
 
                         {/* Headers */}
-                        <div className="grid grid-cols-2 gap-4 text-center px-2">
-                            <div className="flex justify-center items-center gap-2">
-                                <span className="text-orange-500 text-[10px] w-2 h-2 rounded-full bg-orange-500 shadow-sm shadow-orange-500/50 block"></span>
-                                <span className="font-sans text-[11px] font-bold text-slate-800 uppercase tracking-widest truncate" title="Baseline">{baselineCity.name}</span>
+                        <div className="grid grid-cols-2 gap-4 text-center px-2 mb-2">
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-orange-500 text-[10px] w-2 h-2 rounded-full bg-orange-500 shadow-sm shadow-orange-500/50 block"></span>
+                                    <span className="font-sans text-[11px] font-bold text-slate-800 uppercase tracking-widest truncate" title="Baseline">{baselineCity.name}</span>
+                                </div>
+                                <div className="flex justify-center w-full">
+                                    {(baselineCity.communityCounts?.[roleKey] ?? 0) > 0 ? (
+                                        <div className="bg-white/40 backdrop-blur-md border border-white/60 text-[9px] font-medium text-slate-700 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+                                            <span className="animate-pulse text-orange-500 drop-shadow-[0_0_2px_rgba(249,115,22,0.8)]">✨</span>
+                                            <span>Community Powered ({baselineCity.communityCounts![roleKey]})</span>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-white/40 backdrop-blur-md border border-white/60 text-[9px] font-medium text-slate-500 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+                                            <span className="opacity-60 text-slate-400">✨</span>
+                                            <span>Baseline Data</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <div className="flex justify-center items-center gap-2">
-                                <span className="text-slate-500 text-[10px] w-2 h-2 rounded-full bg-indigo-400 shadow-sm shadow-indigo-400/50 block"></span>
-                                <span className="font-sans text-[11px] font-bold text-slate-800 uppercase tracking-widest truncate" title={displayCity.name}>{displayCity.name}</span>
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-slate-500 text-[10px] w-2 h-2 rounded-full bg-indigo-400 shadow-sm shadow-indigo-400/50 block"></span>
+                                    <span className="font-sans text-[11px] font-bold text-slate-800 uppercase tracking-widest truncate" title={displayCity.name}>{displayCity.name}</span>
+                                </div>
+                                <div className="flex justify-center w-full">
+                                    {(displayCity.communityCounts?.[roleKey] ?? 0) > 0 ? (
+                                        <div className="bg-white/40 backdrop-blur-md border border-white/60 text-[9px] font-medium text-slate-700 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+                                            <span className="animate-pulse text-orange-500 drop-shadow-[0_0_2px_rgba(249,115,22,0.8)]">✨</span>
+                                            <span>Community Powered ({displayCity.communityCounts![roleKey]})</span>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-white/40 backdrop-blur-md border border-white/60 text-[9px] font-medium text-slate-500 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+                                            <span className="opacity-60 text-slate-400">✨</span>
+                                            <span>Baseline Data</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
